@@ -1,0 +1,22 @@
+{
+  "name": "prima",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "chart": "^0.1.2",
+    "chart.js": "^2.7.2",
+    "google-charts": "^1.1.0",
+    "react": "^16.3.2",
+    "react-chartkick": "^0.2.0",
+    "react-dom": "^16.3.2",
+    "react-scripts": "1.1.4",
+    "react-simple-maps": "^0.12.0",
+    "svg-charts": "^1.0.3"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject"
+  }
+}
