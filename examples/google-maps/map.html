@@ -2,7 +2,7 @@
     <head>
             <style>
                 #aa{
-                  float: right;
+
                   width:150px;
 
                 }
@@ -34,16 +34,12 @@
             <table>
               <tbody>
                 <tr>
-                  <th><input type='checkbox' ></input></th>
-                  <th>aaaa</th>
+                  <th><input id="work-hour" class="option" type='checkbox' ></input></th>
+                  <th>Working Hour</th>
 
                 </tr><tr>
-                  <th><input type='checkbox'></input></th>
-                  <th>aaaa</th>
-
-                </tr><tr>
-                  <th><input type='checkbox'></input></th>
-                  <th>aaaa</th>
+                  <th><input id="pie-chart" class="option" type='checkbox' checked ></input></th>
+                  <th>Pie Chart</th>
 
                 </tr>
               </tbody>
@@ -55,30 +51,87 @@
         <script type="text/javascript">
 
         var data1,k;
-        init("country");
-        function init(path){
-          var request = new XMLHttpRequest();
-          request.open("GET", "https://prima-visual.herokuapp.com/"+path, false);
-          //var user_and_pass = document.getElementById("user").value + ":" +  document.getElementById("password").value;
-          request.send();
-          data1 = JSON.parse(request.responseText);
-          //console.log(data1);
-        }
-        var machines1 = [];
-          for (var i=0; i< data1.length;i++)
+
+
+        $(".option").change(function() {
+          if(document.getElementById('work-hour').checked)
           {
-            for (k in data1[i].machines ){
-            var pieData = { values: [data1[i].machines[k].workingHour*100, data1[i].machines[k].failureHour*100, data1[i].machines[k].idleHour*100], colors: ['#EC4548', '#FD9133', '#7BE17F'], radius: 48, stroke: 4 };
-            const _icon = 'data:image/svg+xml;charset=UTF-8,' + svgCharts().generatePieChartSVG(pieData.values, pieData.colors, pieData.radius, pieData.stroke);
-            console.log(pieData.values);
-            machines1.push(_icon);
+            google.charts.setOnLoadCallback(drawVisualization);
+            google.charts.setOnLoadCallback(drawVisualizationMarker);
           }
+          else {
+            google.charts.setOnLoadCallback(drawVisualization);
+            google.charts.setOnLoadCallback(drawVisualizationMarker);
+          }
+          if(document.getElementById('pie-chart').checked)
+          {
+            document.getElementById("markerMap").setAttribute("style","'display':'block'");
+          }
+          else
+          {
+            document.getElementById("markerMap").style.display = "none";
+          }
+
+
+});
+
+        function checkNoFilter()
+        {
+          var noFilter = true;
+          var options = document.getElementsByClassName("option");
+          for (var i in options)
+          {
+            var element = options[i];
+            //console.log(element);
+            if (element.checked)
+            {
+              if (element.id != "pie-chart")
+                noFilter = false;
+            }
+          }
+
+          return noFilter;
         }
 
 
-google.charts.load('visualization', '1', { 'packages': ['geochart'] });
-            google.charts.setOnLoadCallback(drawVisualization);
+        var machines1 = [];
+        getData();
 
+        function getData(){
+
+          $.get("https://prima-visual.herokuapp.com/country", function(data, status){
+            data1 = data;
+
+              populatePieChartDrawer();
+
+              //load the maps
+              google.charts.load('visualization', '1', { 'packages': ['geochart'] });
+              google.charts.setOnLoadCallback(drawVisualization);
+
+              google.charts.load('visualization', '1', { 'packages': ['geochart'] });
+              google.charts.setOnLoadCallback(drawVisualizationMarker);
+          });
+
+
+
+          }
+
+          function populatePieChartDrawer()
+          {
+            for (var i=0; i< data1.length;i++)
+            {
+              for (k in data1[i].machines ){
+              var pieData = { values: [data1[i].machines[k].workingHour*100, data1[i].machines[k].failureHour*100, data1[i].machines[k].idleHour*100], colors: ['#EC4548', '#FD9133', '#7BE17F'], radius: 48, stroke: 4 };
+              const _icon = 'data:image/svg+xml;charset=UTF-8,' + svgCharts().generatePieChartSVG(pieData.values, pieData.colors, pieData.radius, pieData.stroke);
+              //console.log(pieData.values);
+              machines1.push(_icon);
+            }
+          }
+
+
+        }
+
+          //draw region map
             function drawVisualization() {
                 var data = new google.visualization.DataTable();
                 data.addColumn('string', 'Country');
@@ -86,7 +139,15 @@ google.charts.load('visualization', '1', { 'packages': ['geochart'] });
                 for (var i=0; i < data1.length;i++){
                   var value=0,j;
                   for (j in data1[i].machines ){
-                      value+=data1[i].machines[j].workingHour/data1[i].machines[j].workingDayHour;
+                      if (checkNoFilter())
+                      {
+
+                        value+=data1[i].machines[j].workingHour/data1[i].machines[j].workingDayHour;
+                      }
+                      else if(document.getElementById('work-hour').checked) {
+                        value+=data1[i].machines[j].workingHour;
+                      }
+
                       //console.log(value);
                     }
                   data.addRows([[{ v: data1[i].name, f: data1[i].name }, value]]);
@@ -97,11 +158,19 @@ google.charts.load('visualization', '1', { 'packages': ['geochart'] });
                     width: "600",
                     height: "400",
                     displayMode: "regions",
-                    colorAxis: {colors: ['#535B7F', '#4374e0']}, // orange to blue
+                     // orange to blue
 
                     sizeAxis: { minValue: 5, maxValue: 15, minSize: 5, maxSize: 15 },
                     region: 'world'
                 };
+                if (document.getElementById('work-hour').checked)
+                {
+                  regionOptions.colorAxis = {colors: ['#535B7F', '#4374e0']};
+                }
+                else {
+                  regionOptions.colorAxis = {colors: ['#299904', '#4aff0f']};
+                }
+
 
 
                 var chartRegion = new google.visualization.GeoChart(document.getElementById('regionMap'));
@@ -110,9 +179,7 @@ google.charts.load('visualization', '1', { 'packages': ['geochart'] });
             }
 
 
-            google.charts.load('visualization', '1', { 'packages': ['geochart'] });
-            google.charts.setOnLoadCallback(drawVisualizationMarker);
-
+            //draw marker map
             function drawVisualizationMarker() {
                 var data = new google.visualization.DataTable();
                 data.addColumn('string', 'Country');
@@ -133,9 +200,9 @@ google.charts.load('visualization', '1', { 'packages': ['geochart'] });
 
                     backgroundColor: 'transparent',
                     datalessRegionColor: 'transparent',
-                    defaultColor: 'white',
+
                     displayMode: "markers",
-                    colorAxis: {colors: ['#535B7F', '#4374e0']}, // orange to blue
+
                     tooltip : false,
                     sizeAxis: { minValue: 5, maxValue: 15, minSize: 5, maxSize: 15 },
                     region: 'world'
@@ -147,9 +214,10 @@ google.charts.load('visualization', '1', { 'packages': ['geochart'] });
                     var t;
 
                     for (t=0; t< 3;t++){
-                    var img = "#img";
+
                     createMarkerImage("img", machines1[t]);
-                    console.log(document.getElementsByTagName('circle')[t]);
+                    //console.log(document.getElementsByTagName('circle')[t]);
+                    
                     document.getElementsByTagName('circle')[t].setAttribute("fill","url(#img)");
                   }
                 });
@@ -165,7 +233,7 @@ google.charts.load('visualization', '1', { 'packages': ['geochart'] });
 
             function createMarkerImage(id, url) {
                 var patt = document.createElementNS('http://www.w3.org/2000/svg', 'pattern');
-                console.log(url);
+                //console.log(url);
                 patt.setAttribute('id', id);
                 patt.setAttribute('width', '10');
                 patt.setAttribute('height', '10');
